@@ -1,0 +1,266 @@
+Mini-Project 1 - Charlie Janini
+
+This project seeks to plot the electron densities of some representative molecules (CO_{2} and H_{2}O) as a "fog," as opposed to the prior representation as a solid.
+
+
+* Plot the Electron Density of CO_{2} as a "fog"
+
+#+begin_src python
+from jasp import *
+from enthought.mayavi import mlab
+from ase.data import vdw_radii
+from ase.data.colors import cpk_colors
+from ase import Atoms, Atom
+import numpy as np
+
+CO2center = Atoms([Atom('O',[1.8,2.,2.]),
+             Atom('C',[2.,2.,2.]),
+             Atom('O',[3.2,2.,2.])],
+             cell = (4,4,4))
+
+CO2center.center()
+
+with jasp('MiniProject1/CO2Center',
+          encut = 350,
+          xc = 'PBE',
+          atoms = CO2center) as calc:
+    try:
+        calc.calculate()
+        atoms = calc.get_atoms()
+        x,y,z,cd = calc.get_charge_density()
+    except (VaspSubmitted, VaspQueued):
+        import sys; sys.exit()
+
+mlab.figure(bgcolor=(0,0,0)) #black background for easier visualization
+
+# plot atoms as spheres (as seen in dft-book)
+
+for atom in atoms:
+    mlab.points3d(atom.x,
+                  atom.y,
+                  atom.z,
+                  scale_factor=vdw_radii[atom.number]/5.,
+                  resolution=20,
+                  color = tuple(cpk_colors[atom.number]),
+                  scale_mode='none')
+
+# construct unit cell (as seen in dft-book)
+
+a1, a2, a3 = atoms.get_cell()
+origin = [0,0,0]
+cell_matrix = [[origin,a1],
+               [origin,a2],
+               [origin,a3],
+               [a1,    a1+a2],
+               [a1,    a1+a3],
+               [a2,    a2+a1],
+               [a2,    a2+a3],
+               [a3,    a3+a1],
+               [a3,    a3+a2],
+               [a1+a2, a1+a2+a3],
+               [a2+a3, a1+a2+a3],
+               [a1+a3, a1+a2+a3]]
+
+# connect corners of unit cell with tubes (as seen in dft-book)
+
+for p1,p2 in cell_matrix:
+    mlab.plot3d([p1[0],p2[0]],
+                [p1[1],p2[1]],
+                [p1[2],p2[2]],
+                tube_radius=0.02)
+
+# map x, y, z, and cd (outputs from calc.get_charge_density) into scalar_field to allow for plotting
+data = mlab.pipeline.scalar_field(x,y,z,cd)
+
+# plot charge density as a fog
+mlab.pipeline.volume(data, vmin = .5, vmax = 3.5)
+# vmin and vmax parameters must be optimized for best visualization
+mlab.view(azimuth=90, elevation=90, distance = 'auto')
+# view angle must also be optimized for best viewing of electron density
+mlab.savefig('CO2ChargeFog.png')
+mlab.show()
+
+print min
+print max
+
+#+end_src
+
+#+RESULTS:
+: <built-in function min>
+: <built-in function max>
+
+[[./CO2ChargeFog.png]]
+
+Electron density is concentrated on the oxygen atoms, which makes sense because oxygen is more electronegative than carbon. Thus, the oxygen serves as an electron sink while the carbon serves as an electron source to the bonding of CO_{2}.
+
+* Plot the Electron Density of H_{2}O as a "fog"
+Code very similar to plotting of CO_{2}, changed Atoms object, vmin, vmax, and view of visualization.
+
+#+begin_src python
+from jasp import *
+from enthought.mayavi import mlab
+from ase.data import vdw_radii
+from ase.data.colors import cpk_colors
+from ase import Atoms, Atom
+import numpy as np
+
+# Input H2O atom with experimental bond lengths in center of cell
+
+H2Ocenter = Atoms([Atom('O',[2.,2.,2.]),
+                   Atom('H',[1.25,2.,1.42]),
+                   Atom('H',[2.75,2.,2.58])],
+                   cell = (4,4,4))
+
+
+with jasp('MiniProject1/H2OCenter',
+          encut = 350,
+          xc = 'PBE',
+          atoms = H2Ocenter) as calc:
+    try:
+        calc.calculate()
+        atoms = calc.get_atoms()
+        x,y,z,cd = calc.get_charge_density()
+    except (VaspSubmitted, VaspQueued):
+        import sys; sys.exit()
+
+mlab.figure(bgcolor=(0,0,0))
+
+# plot atoms as spheres
+
+for atom in atoms:
+    mlab.points3d(atom.x,
+                  atom.y,
+                  atom.z,
+                  scale_factor=vdw_radii[atom.number]/5.,
+                  resolution=20,
+                  color = tuple(cpk_colors[atom.number]),
+                  scale_mode='none')
+
+# construct unit cell
+
+a1, a2, a3 = atoms.get_cell()
+origin = [0,0,0]
+cell_matrix = [[origin,a1],
+               [origin,a2],
+               [origin,a3],
+               [a1,    a1+a2],
+               [a1,    a1+a3],
+               [a2,    a2+a1],
+               [a2,    a2+a3],
+               [a3,    a3+a1],
+               [a3,    a3+a2],
+               [a1+a2, a1+a2+a3],
+               [a2+a3, a1+a2+a3],
+               [a1+a3, a1+a2+a3]]
+
+# connect corners of unit cell with tubes
+
+for p1,p2 in cell_matrix:
+    mlab.plot3d([p1[0],p2[0]],
+                [p1[1],p2[1]],
+                [p1[2],p2[2]],
+                tube_radius=0.02)
+
+# map x, y, z, and charge density into scalar_field to allow for plotting
+data = mlab.pipeline.scalar_field(x,y,z,cd)
+
+#plot charge density as a fog
+mlab.pipeline.volume(data, vmin = 1, vmax = 3) #changed vmin and vmax from CO_{2} example above
+mlab.view(azimuth=135, elevation=90, distance = 'auto') #changed view to make visualization better
+mlab.savefig('H2OChargeFog.png')
+mlab.show()
+
+print min
+print max
+
+#+end_src
+
+#+RESULTS:
+: -0.0013805
+: 7.9041
+
+[[./H2OChargeFog.png]]
+
+As can be seen in the plot, the electron density around water is concentrated on the oxygen molecule. This makes sense because oxygen is much more electronegative than hydrogen.
+* Plot the Electron Density of CH_{3}Cl as a "fog"
+
+#+begin_src python
+
+from jasp import *
+from enthought.mayavi import mlab
+from ase.data import vdw_radii
+from ase.data.colors import cpk_colors
+from ase.data.molecules import molecule
+import numpy as np
+
+# Input H2O atom with experimental bond lengths in center of cell
+
+CH3Clcenter = molecule('CH3Cl', cell = (4,4,4))
+CH3Clcenter.center()
+
+
+with jasp('MiniProject1/CH3ClCenter',
+          encut = 350,
+          xc = 'PBE',
+          atoms = CH3Clcenter) as calc:
+    try:
+        calc.calculate()
+        atoms = calc.get_atoms()
+        x,y,z,cd = calc.get_charge_density()
+    except (VaspSubmitted, VaspQueued):
+        import sys; sys.exit()
+
+mlab.figure(bgcolor=(0,0,0))
+
+# plot atoms as spheres
+
+for atom in atoms:
+    mlab.points3d(atom.x,
+                  atom.y,
+                  atom.z,
+                  scale_factor=vdw_radii[atom.number]/5.,
+                  resolution=20,
+                  color = tuple(cpk_colors[atom.number]),
+                  scale_mode='none')
+
+# construct unit cell
+
+a1, a2, a3 = atoms.get_cell()
+origin = [0,0,0]
+cell_matrix = [[origin,a1],
+               [origin,a2],
+               [origin,a3],
+               [a1,    a1+a2],
+               [a1,    a1+a3],
+               [a2,    a2+a1],
+               [a2,    a2+a3],
+               [a3,    a3+a1],
+               [a3,    a3+a2],
+               [a1+a2, a1+a2+a3],
+               [a2+a3, a1+a2+a3],
+               [a1+a3, a1+a2+a3]]
+
+# connect corners of unit cell with tubes
+
+for p1,p2 in cell_matrix:
+    mlab.plot3d([p1[0],p2[0]],
+                [p1[1],p2[1]],
+                [p1[2],p2[2]],
+                tube_radius=0.02)
+
+# map x, y, z, and charge density into scalar_field to allow for plotting
+data = mlab.pipeline.scalar_field(x,y,z,cd)
+
+#plot charge density as a fog
+mlab.pipeline.volume(data, vmin = 0.5, vmax = 1.5) #changed vmin and vmax from CO_{2} example above
+mlab.view(azimuth=90, elevation=90, distance = 'auto') #changed view to make visualization better
+mlab.savefig('CH3ClChargeFog.png')
+mlab.show()
+
+#+end_src
+
+#+RESULTS:
+
+[[./CH3ClChargeFog.png]]
+
+As the figure shows, the majority of the electron density for chloromethane lies on the chlorine atom. Chlorine is highly elecrtonegative compared to carbon and hydrogen. This electron density plot agrees with the experimental fact that chloromethane has a large dipole moment, with the negative end at the chlorine atom.

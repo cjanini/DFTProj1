@@ -1,0 +1,11 @@
+Mini-Project 1 - README
+
+For mini-project 1, a program was created that can plot the electron density of molecules (specifically CO_{2} and H_{2}O, and CH_{3}Cl) as a fog, instead of as a solid isosurface as in homework 3. Much of the process is similar to the process to plot isosurfaces, with the major changes coming at the plotting step. jasp and the function calc.get_electron_density are used to compute the electron density, and the mayavi functions mlab.pipeline.scalar_field and mlab.pipeline.volume were used to plot the electron density as a fog.
+
+mlab.pipeline.scalar_field accepted the outputs of calc.get_charge_density directly.
+
+The vmin and vmax parameters of mlab.pipeline.volume require careful optimization to make the fog appear in a way which is useful. The plots were made against a black background to make the electron fog easier to visualize, in turn making the vmin and vmax parameters easier to optimize.
+
+Another set of parameters to optimize arise from mlab.view. The azimuth and elevation parameters must be changed for different molecules to aid with viewing the electron density properly.  As can be seen in the script of the program, the views of the CO_{2} and H_{2}O are different in order to see the electron density. The view for chloromethane was set to be the same as the view for CO_{2}.
+
+In order to plot the electron density of other molecules, the script would have to be modified to be run for a different molecule by changing the atoms object. Use of pre-defined molecules from ase is also possible, though the molecules must be centered in the unit cell in order to ensure a good visualization. This is how the chloromethane was plotted, using the command CH3Clcenter.center(). If the molecules weren't centered, the electron density would show up on the corners of the unit cell, making the visualization less useful.
